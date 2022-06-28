@@ -61,13 +61,12 @@ packer.init({
 
 local use = packer.use
 
--- Plugin configuration
+-- Plugin list and configuration
 packer.startup(function()
   -- Startup plugins that don't require configuration
   use({
     "wbthomason/packer.nvim",
     "lewis6991/impatient.nvim",
-    "nathom/filetype.nvim",
     "nvim-lua/plenary.nvim",
   })
 
@@ -81,6 +80,124 @@ packer.startup(function()
       })
       vim.cmd("colorscheme kanagawa")
     end,
+  })
+
+  -- LSP
+  use({
+    "neovim/nvim-lspconfig",
+    after = "cmp-nvim-lsp",
+    config = function()
+      local lspconfig = require("lspconfig")
+
+      -- Lua
+      local runtime_path = vim.split(package.path, ";")
+      table.insert(runtime_path, "lua/?.lua")
+      table.insert(runtime_path, "lua/?/init.lua")
+
+      lspconfig.sumneko_lua.setup({
+        settings = {
+          Lua = {
+            runtime = {
+              version = "LuaJIT",
+              -- path = runtime_path
+            },
+            diagnostics = {
+              globals = {"vim"}
+            },
+            workspace = {
+              library = vim.api.nvim_get_runtime_file("", true),
+              maxPreload = 100000,
+              preloadFileSize = 100000,
+            },
+            telemetry = {enable = false}
+          }
+        }
+      })
+    end
+  })
+
+  -- Autocompletion
+  use("hrsh7th/cmp-nvim-lsp")
+  use("hrsh7th/cmp-buffer")
+  use("hrsh7th/cmp-path")
+  use("hrsh7th/cmp-cmdline")
+  use("hrsh7th/vim-vsnip")
+  use("rafamadriz/friendly-snippets")
+  use({
+    "hrsh7th/nvim-cmp",
+    config = function()
+      local cmp = require("cmp")
+
+      cmp.setup({
+        snippet = {
+          expand = function(args)
+            vim.fn["vsnip#anonymous"](args.body)
+          end,
+        },
+        window = {
+          completion = cmp.config.window.bordered(),
+          documentation = cmp.config.window.bordered(),
+        },
+        mapping = {
+          ["<C-n>"] = cmp.mapping(cmp.mapping.select_next_item(), {"i","c"}),
+          ["<C-p>"] = cmp.mapping(cmp.mapping.select_prev_item(), {"i","c"}),
+          ["<C-d>"] = cmp.mapping.scroll_docs(-4),
+          ["<C-f>"] = cmp.mapping.scroll_docs(4),
+          ["<C-Space>"] = cmp.mapping(cmp.mapping.complete(), { "i", "c" }),
+          ["<Tab>"] = cmp.mapping(cmp.mapping.confirm({ select = true }), { "i", "c" }),
+          ["<CR>"] = cmp.mapping(cmp.mapping.confirm(), { "i", "c" }),
+          ["<Esc>"] = cmp.mapping(cmp.mapping.abort(), { "i", "c" }),
+        },
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" },
+          { name = "vsnip" },
+        }, {
+          { name = "buffer" },
+        })
+      })
+
+      -- Use buffer source for `/` (if you enabled `native_menu`, this won't work anymore).
+      cmp.setup.cmdline("/", {
+        sources = {
+          { name = "buffer" }
+        }
+      })
+
+      -- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
+      cmp.setup.cmdline(":", {
+        sources = cmp.config.sources({
+          { name = "path" }
+        }, {
+          { name = "cmdline" }
+        })
+      })
+    end
+  })
+
+  -- Treesitter
+  use({
+    "nvim-treesitter/nvim-treesitter",
+    run = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        highlight = {
+          enable = true,
+        },
+        indent = {
+          enable = true,
+          disable = {}
+        },
+        ensure_installed = {
+          "lua",
+          "markdown"
+        },
+        rainbow = {
+          enable = false,
+          extended_mode = true, -- Highlight also non-parentheses delimiters, boolean or table: lang -> boolean
+          max_file_lines = 1000, -- Do not enable for files with more than 1000 lines, int
+        },
+      })
+    end
   })
 
   -- Enhanced comments
