@@ -89,6 +89,8 @@ packer.startup(function()
     config = function()
       local lspconfig = require("lspconfig")
 
+      local capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp.protocol.make_client_capabilities())
+
       -- Lua
       local runtime_path = vim.split(package.path, ";")
       table.insert(runtime_path, "lua/?.lua")
@@ -99,11 +101,12 @@ packer.startup(function()
           Lua = {
             runtime = {
               version = "LuaJIT",
-              -- path = runtime_path
+              path = runtime_path
             },
             diagnostics = {
               globals = {"vim"}
             },
+            capabilities = capabilities,
             workspace = {
               library = vim.api.nvim_get_runtime_file("", true),
               maxPreload = 100000,
@@ -127,6 +130,10 @@ packer.startup(function()
     "hrsh7th/nvim-cmp",
     config = function()
       local cmp = require("cmp")
+
+      if cmp == nil then
+        return
+      end
 
       cmp.setup({
         snippet = {
@@ -152,7 +159,7 @@ packer.startup(function()
           { name = "nvim_lsp" },
           { name = "vsnip" },
         }, {
-          { name = "buffer" },
+          { name = "buffer", keyword_length = 3 },
         })
       })
 
@@ -189,7 +196,8 @@ packer.startup(function()
         },
         ensure_installed = {
           "lua",
-          "markdown"
+          "markdown",
+          "markdown_inline"
         },
         rainbow = {
           enable = false,
